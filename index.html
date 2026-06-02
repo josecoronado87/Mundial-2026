@@ -222,6 +222,32 @@
   .modal-foot button{flex:1;font-family:'Barlow Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-size:14px;border-radius:10px;padding:11px;cursor:pointer;border:1px solid var(--line);}
   .copy-btn{background:var(--rep);color:#1a0d02;border-color:var(--rep);}
 
+  /* ===== TUTORIAL ===== */
+  .tut-bg{position:fixed;inset:0;background:rgba(3,12,8,.82);backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center;padding:18px;}
+  .tut-bg.open{display:flex;}
+  .tut-card{width:100%;max-width:440px;background:linear-gradient(160deg,#12281d,#0b1d14);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:24px;padding:28px 22px 20px;box-shadow:0 24px 70px rgba(0,0,0,.65);text-align:center;position:relative;animation:tutpop .35s cubic-bezier(.2,.9,.3,1.25);}
+  @keyframes tutpop{from{transform:scale(.9) translateY(24px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+  .tut-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--txt-dim);font-family:'Barlow Condensed';font-weight:700;letter-spacing:.6px;font-size:13px;text-transform:uppercase;cursor:pointer;}
+  .tut-icon{font-size:60px;line-height:1;margin:8px 0 16px;filter:drop-shadow(0 5px 16px rgba(244,195,49,.45));animation:tutfloat 2.8s ease-in-out infinite;}
+  @keyframes tutfloat{0%,100%{transform:translateY(0) rotate(0);}50%{transform:translateY(-8px) rotate(-2deg);}}
+  .tut-title{font-family:'Anton';font-weight:400;text-transform:uppercase;letter-spacing:.5px;font-size:24px;margin-bottom:10px;}
+  .tut-title b{color:var(--gold);}
+  .tut-text{color:var(--txt-dim);font-size:15.5px;line-height:1.6;min-height:80px;}
+  .tut-text b{color:var(--txt);}
+  .tut-demo{margin:8px 0 2px;min-height:36px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;}
+  .tut-chip{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:7px 13px;font-family:'Barlow Condensed';font-weight:700;letter-spacing:.5px;font-size:14px;}
+  .tut-key{font-family:'Barlow Condensed';font-size:16px;}
+  .tut-dots{display:flex;gap:7px;justify-content:center;margin:20px 0 16px;}
+  .tut-dots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.25s;}
+  .tut-dots i.on{background:var(--gold);width:24px;border-radius:5px;}
+  .tut-nav{display:flex;gap:10px;}
+  .tut-nav button{flex:1;font-family:'Barlow Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-size:15px;border-radius:13px;padding:14px;cursor:pointer;border:1px solid var(--line);transition:transform .1s;}
+  .tut-nav button:active{transform:scale(.96);}
+  .tut-prev{background:var(--panel);color:var(--txt-dim);}
+  .tut-prev:disabled{opacity:.35;}
+  .tut-next{background:var(--grass);color:#04130b;border-color:var(--grass);}
+  .tut-next.finish{background:var(--gold);border-color:var(--gold);color:#1a0d02;}
+
   .save-flash{
     position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);
     background:var(--grass);color:#04130b;font-family:'Barlow Condensed';font-weight:700;
@@ -269,6 +295,7 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
     <input id="search" type="text" placeholder="Buscar selección…">
   </div>
+  <button class="btn-ghost" id="open-help">❓ Cómo usar</button>
   <button class="btn-ghost" id="open-rep">🔁 Mis repetidas</button>
   <button class="btn-ghost" id="open-backup">💾 Respaldo</button>
   <button class="btn-ghost btn-reset" id="reset">Reiniciar</button>
@@ -327,6 +354,22 @@
     <div class="modal-foot">
       <button class="copy-btn" id="do-restore" style="background:var(--grass);border-color:var(--grass);color:#04130b;">♻️ Restaurar</button>
       <button class="x" style="flex:0 0 auto;width:auto;padding:0 18px" id="close-backup-2">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial -->
+<div class="tut-bg" id="tutorial">
+  <div class="tut-card">
+    <button class="tut-x" id="tut-skip">Saltar ✕</button>
+    <div class="tut-icon" id="tut-icon">🏆</div>
+    <div class="tut-title" id="tut-title"></div>
+    <div class="tut-text" id="tut-text"></div>
+    <div class="tut-demo" id="tut-demo"></div>
+    <div class="tut-dots" id="tut-dots"></div>
+    <div class="tut-nav">
+      <button class="tut-prev" id="tut-prev">‹ Atrás</button>
+      <button class="tut-next" id="tut-next">Siguiente ›</button>
     </div>
   </div>
 </div>
@@ -591,12 +634,56 @@ function bind(){
     catch(e){ alert('El código no es válido o está incompleto. Revisá que lo hayas copiado entero.'); }
   });
 
+  // Tutorial
+  document.getElementById('open-help').addEventListener('click',openTut);
+  document.getElementById('tut-skip').addEventListener('click',closeTut);
+  document.getElementById('tut-prev').addEventListener('click',()=>{ if(tutStep>0){tutStep--;renderTut();} });
+  document.getElementById('tut-next').addEventListener('click',()=>{ if(tutStep<TUT.length-1){tutStep++;renderTut();} else closeTut(); });
+  document.getElementById('tutorial').addEventListener('click',e=>{ if(e.target.id==='tutorial') closeTut(); });
+
   document.getElementById('reset').addEventListener('click',()=>{
     if(confirm('¿Reiniciar todo el checklist? Se borrará tu progreso guardado.')){
       initState(); saveState(); render(); applyView();
     }
   });
 }
+
+/* ====== TUTORIAL ====== */
+const TUT=[
+  {icon:"🏆", title:"¡Bienvenido!",
+   text:"Este es tu <b>álbum del Mundial 2026</b>: 980 figuritas. Marcá las que tenés y tu avance <b>se guarda solo</b> en este dispositivo.",
+   demo:""},
+  {icon:"👆", title:"Tocá para marcar",
+   text:"Cada casilla cambia al tocarla y vuelve a empezar. Tocá de nuevo para corregir.",
+   demo:'<span class="tut-chip" style="background:var(--falta);border:1px solid var(--falta-line);color:var(--txt-dim)">Falta</span><span class="tut-chip" style="background:var(--grass);color:#04130b">Pegada ✓</span><span class="tut-chip" style="background:var(--rep);color:#1a0d02">Repetida R</span>'},
+  {icon:"✨", title:"Brillantes y foto",
+   text:"Las <b>FWC</b> y el <b>escudo (figura 1)</b> brillan al marcarlas. La <b>figura 13</b> es la foto del equipo.",
+   demo:'<span class="tut-chip" style="background:var(--falta);border:1px solid #7fd2ff;color:#cfe9ff">✨ Brillante</span><span class="tut-chip" style="background:var(--falta);border:1px dashed #4a7a9a;color:var(--txt-dim)">📷 Foto equipo</span>'},
+  {icon:"🔎", title:"Filtros y búsqueda",
+   text:"Usá <b>Faltantes</b> para ver qué te falta (ideal para comprar sobres), <b>✨ Brillo</b> para las brillantes, y el buscador por selección.",
+   demo:'<span class="tut-chip" style="background:var(--panel);border:1px solid var(--line);color:var(--txt-dim)">Faltantes</span><span class="tut-chip" style="background:var(--panel);border:1px solid var(--line);color:var(--txt-dim)">✨ Brillo</span>'},
+  {icon:"🔁", title:"Tus repetidas",
+   text:"En <b>Mis repetidas</b> ves tus duplicados, los <b>copiás</b> y los mandás por WhatsApp para hacer cambios.",
+   demo:'<span class="tut-chip" style="background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--gold)">🔁 Mis repetidas</span>'},
+  {icon:"💾", title:"No pierdas tu avance",
+   text:"En <b>Respaldo</b> guardás un código de tu progreso para no perderlo o pasarlo a otro celular. ¡Listo, a llenar el álbum!",
+   demo:'<span class="tut-chip" style="background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--gold)">💾 Respaldo</span>'},
+];
+let tutStep=0;
+function renderTut(){
+  const s=TUT[tutStep];
+  document.getElementById('tut-icon').textContent=s.icon;
+  document.getElementById('tut-title').innerHTML=s.title;
+  document.getElementById('tut-text').innerHTML=s.text;
+  document.getElementById('tut-demo').innerHTML=s.demo;
+  document.getElementById('tut-dots').innerHTML=TUT.map((_,i)=>`<i class="${i===tutStep?'on':''}"></i>`).join('');
+  const prev=document.getElementById('tut-prev'), next=document.getElementById('tut-next');
+  prev.disabled=(tutStep===0);
+  if(tutStep===TUT.length-1){ next.textContent="¡Empezar! ⚽"; next.classList.add('finish'); }
+  else { next.textContent="Siguiente ›"; next.classList.remove('finish'); }
+}
+function openTut(){ tutStep=0; renderTut(); document.getElementById('tutorial').classList.add('open'); }
+function closeTut(){ document.getElementById('tutorial').classList.remove('open'); try{ Store.set('panini_tut_seen_v1','1'); }catch(e){} }
 
 /* ====== INIT ====== */
 (async function(){
@@ -605,6 +692,7 @@ function bind(){
   render();
   bind();
   applyView();
+  try{ const seen=await Store.get('panini_tut_seen_v1'); if(!seen) openTut(); }catch(e){ openTut(); }
 })();
 </script>
 </body>
